@@ -22,12 +22,14 @@ class MixtralExpertWrapper(nn.Module):
         
     @staticmethod
     def _add_storage_to_state_dict_hook(self, state_dict, prefix, local_metadata):
-        state_dict[prefix + 'storage'] = torch.as_tensor(self.storage, dtype=torch.uint8)
+        state_dict[f'{prefix}storage'] = torch.as_tensor(
+            self.storage, dtype=torch.uint8
+        )
         return state_dict
     
     def _load_storage_from_state_dict_hook(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
-        self.storage.copy_(state_dict[prefix + 'storage'].storage().untyped())
-        del state_dict[prefix + 'storage']
+        self.storage.copy_(state_dict[f'{prefix}storage'].storage().untyped())
+        del state_dict[f'{prefix}storage']
     
     def forward(self, *args, **kwargs):
         return self.expert_module(*args, **kwargs)
@@ -59,7 +61,7 @@ class MixtralExpertWrapper(nn.Module):
         storage = torch.UntypedStorage(storage_size, device=device) 
 
         i = 0
-        new_flattened_states = list()
+        new_flattened_states = []
         for x in nested_flatten(state_dict):
             if not isinstance(x, torch.Tensor):
                 new_flattened_states.append(x)

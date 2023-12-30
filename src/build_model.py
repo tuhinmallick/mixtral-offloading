@@ -158,7 +158,7 @@ def make_and_load_expert_wrapper(
 def load_00_expert_state_dict(states_dir: str, device: torch.device):
     index_path = os.path.join(states_dir, "model.safetensors.index.json")
     with open(index_path) as f:
-        module_idx = f"model.layers.0.block_sparse_moe.experts.0"
+        module_idx = "model.layers.0.block_sparse_moe.experts.0"
         state_fpath = json.load(f)["weight_map"][f"{module_idx}.w1.W_q"]
     return load_file(os.path.join(states_dir, state_fpath), device=str(device))
 
