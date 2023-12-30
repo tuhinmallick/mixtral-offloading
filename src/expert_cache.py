@@ -60,7 +60,9 @@ class ExpertCache:
 
         self.registered_experts: Dict[ExpertUID, ExpertInfo] = dict()
 
-        self.main_modules = [self._check_module(make_module()) for i in range(main_size)]
+        self.main_modules = [
+            self._check_module(make_module()) for _ in range(main_size)
+        ]
         self.main_infos: List[Optional[ExpertInfo]] = [None for _ in range(main_size)]
 
         assert self.module_size is not None
@@ -137,7 +139,9 @@ class ExpertCache:
             uids = sorted(uids, key=lambda uid: self.registered_experts[uid].offloaded)
         infos = [self.registered_experts[uid] for uid in uids]
 
-        assert len(set(info.eviction_group for info in infos)) == 1, "experts must be in the same evicton group"
+        assert (
+            len({info.eviction_group for info in infos}) == 1
+        ), "experts must be in the same evicton group"
         eviction_group = self.group_infos[infos[0].eviction_group]
         for info in infos:
             eviction_group.mark_used(info)

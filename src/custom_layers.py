@@ -166,35 +166,41 @@ class HQQLinearTritonSavable(HQQLinear):
         return state_dict
     
     def _load_from_state_dict_hook(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
-        tensor_paths = [k[len(prefix + 'meta.'):] for k in state_dict.keys() if k.startswith(prefix + 'meta.')]
+        tensor_paths = [
+            k[len(f'{prefix}meta.') :]
+            for k in state_dict.keys()
+            if k.startswith(f'{prefix}meta.')
+        ]
         assert set(tensor_paths).issubset(
             {'scale_q', 'meta_scale.scale', 'meta_scale.zero', 'zero_q', 'meta_zero.scale', 'meta_zero.zero',
             'scale', 'zero'}
         )
-        
+
         def _del(name):
             del state_dict[prefix + name]
+
         def _set(name):
             setattr(self, name, state_dict[prefix + name])
             _del(name)
+
         def _get(name):
             v = state_dict[prefix + name]
             _del(name)
             return v
-        
+
         _set('W_q')
         if 'bias' in state_dict:
             _set('bias')
         else:
             self.bias = None
-            
+
         if not hasattr(self, 'meta'):
             self.meta = {}
-        
-        if (prefix + 'meta.meta_scale.scale') in state_dict:
+
+        if f'{prefix}meta.meta_scale.scale' in state_dict:
             self.meta['scale_q'] = _get('meta.scale_q')
             self.meta['quant_scale'] = True
-            if not 'meta_scale' in self.meta:
+            if 'meta_scale' not in self.meta:
                 self.meta['meta_scale'] = {}
             self.meta['meta_scale'] |= {
                 'scale': _get('meta.meta_scale.scale'),
@@ -202,10 +208,10 @@ class HQQLinearTritonSavable(HQQLinear):
             }
         else:
             self.meta['scale'] = _get('meta.scale')
-        if (prefix + 'meta.meta_zero.scale') in state_dict:
+        if f'{prefix}meta.meta_zero.scale' in state_dict:
             self.meta['zero_q'] = _get('meta.zero_q')
             self.meta['quant_zero'] = True
-            if not 'meta_zero' in self.meta:
+            if 'meta_zero' not in self.meta:
                 self.meta['meta_zero'] = {}
             self.meta['meta_zero'] |= {
                 'scale': _get('meta.meta_zero.scale'),
@@ -214,23 +220,23 @@ class HQQLinearTritonSavable(HQQLinear):
         else:
             self.meta['zero'] = _get('meta.zero')
         self.ready = True
-        
+
         # self.cuda()
         # self.in_gpu = self.W_q.device.type == 'cuda'
         # assert self.in_gpu
-        
+
         self.repack()
         
     @classmethod
     def _get_tensor_paths(cls, state: Dict[str, Any], prefix=''):
         paths = []
-        
+
         for k, v in state.items():
             if isinstance(v, dict):
-                paths += cls._get_tensor_paths(v, prefix=k + '.')
+                paths += cls._get_tensor_paths(v, prefix=f'{k}.')
             elif isinstance(v, torch.Tensor):
                 paths.append(prefix + k)
-        
+
         return paths
     
     def state_dict(self, *args, **kwargs):
